@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "goblinsanddungeons:items/ring_of_experience"
+    "layer0": "goblinsanddungeons:item/ring_of_experience"
   }
 }

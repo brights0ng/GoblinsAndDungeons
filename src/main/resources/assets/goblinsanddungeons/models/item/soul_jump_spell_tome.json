@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "goblinsanddungeons:items/spell_tome"
+    "layer0": "goblinsanddungeons:item/spell_tome"
   }
 }

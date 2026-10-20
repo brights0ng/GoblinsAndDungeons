@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/handheld",
   "textures": {
-    "layer0": "goblinsanddungeons:items/staff_amethyst"
+    "layer0": "goblinsanddungeons:item/staff_amethyst"
   }
 }

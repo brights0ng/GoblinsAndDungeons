@@ -2,8 +2,8 @@
 	"credit": "Made with Blockbench",
 	"texture_size": [64, 32],
 	"textures": {
-		"0": "goblinsanddungeons:blocks/urn",
-		"particle": "goblinsanddungeons:blocks/urn"
+		"0": "goblinsanddungeons:block/urn",
+		"particle": "goblinsanddungeons:block/urn"
 	},
 	"elements": [
 		{

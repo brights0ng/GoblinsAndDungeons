@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "goblinsanddungeons:items/levitation_orb"
+    "layer0": "goblinsanddungeons:item/levitation_orb"
   }
 }

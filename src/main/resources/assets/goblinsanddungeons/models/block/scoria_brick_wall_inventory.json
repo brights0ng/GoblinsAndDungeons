@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:block/wall_inventory",
   "textures": {
-    "wall": "goblinsanddungeons:blocks/scoria_bricks"
+    "wall": "goblinsanddungeons:block/scoria_bricks"
   }
 }

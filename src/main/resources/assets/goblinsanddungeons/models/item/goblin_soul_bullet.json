@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "goblinsanddungeons:items/goblin_soul_bullet"
+    "layer0": "goblinsanddungeons:item/goblin_soul_bullet"
   }
 }

@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:block/cube_all",
   "textures": {
-    "all": "goblinsanddungeons:blocks/scoria_bricks"
+    "all": "goblinsanddungeons:block/scoria_bricks"
   }
 }
