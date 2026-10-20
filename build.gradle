@@ -55,6 +55,12 @@ neoForge {
             sourceSet(sourceSets.main)
         }
     }
+
+    // Unit tests run with Minecraft and this mod on the classpath, so they can reach the mod's registries and classes.
+    unitTest {
+        enable()
+        testedMod = mods."${mod_id}"
+    }
 }
 
 sourceSets.main.resources {

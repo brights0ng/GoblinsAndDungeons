@@ -7,7 +7,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlotGroup;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.ItemAttributeModifiers;
@@ -15,14 +14,15 @@ import superlord.goblinsanddungeons.GoblinsAndDungeons;
 
 import java.util.List;
 
-public class HealthRingItem extends Item {
+public class HealthRingItem extends RingItem {
 
     public static final ResourceLocation HEALTH_MODIFIER_ID = ResourceLocation.fromNamespaceAndPath(GoblinsAndDungeons.MOD_ID, "ring_of_health_boost");
 
     public HealthRingItem(Properties properties) {
-        super(properties.stacksTo(1).attributes(createAttributes()));
+        super(properties.attributes(createAttributes()));
     }
 
+    /** +1 heart (2 health points) while in the off-hand. */
     public static ItemAttributeModifiers createAttributes() {
         return ItemAttributeModifiers.builder()
                 .add(

@@ -1,0 +1,14 @@
+{
+  "replace": false,
+  "values": [
+    { "id": "goblinsanddungeons:gob", "required": false },
+    { "id": "goblinsanddungeons:hobgob", "required": false },
+    { "id": "goblinsanddungeons:goblo", "required": false },
+    { "id": "goblinsanddungeons:garch", "required": false },
+    { "id": "goblinsanddungeons:goom", "required": false },
+    { "id": "goblinsanddungeons:gobber", "required": false },
+    { "id": "goblinsanddungeons:goblin_king", "required": false },
+    { "id": "goblinsanddungeons:mimic", "required": false },
+    { "id": "goblinsanddungeons:ogre", "required": false }
+  ]
+}

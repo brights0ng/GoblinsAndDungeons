@@ -1,0 +1,377 @@
+package superlord.goblinsanddungeons.gametest;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.gametest.framework.GameTest;
+import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.ExperienceOrb;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.monster.Zombie;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.alchemy.PotionContents;
+import net.minecraft.world.item.alchemy.Potions;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+import superlord.goblinsanddungeons.GoblinsAndDungeons;
+import superlord.goblinsanddungeons.common.blocks.UrnBlock;
+import superlord.goblinsanddungeons.common.entity.tile.SoulAshCampfireTileEntity;
+import superlord.goblinsanddungeons.datagen.EmptyGameTestStructure;
+import superlord.goblinsanddungeons.init.AttachmentInit;
+import superlord.goblinsanddungeons.init.BlockInit;
+import superlord.goblinsanddungeons.init.EffectInit;
+import superlord.goblinsanddungeons.init.ItemInit;
+import superlord.goblinsanddungeons.magic.PlayerMana;
+import superlord.goblinsanddungeons.magic.PlayerSpells;
+
+/**
+ * In-game checks of what has been ported so far: the urn and the soul ash campfire, the rings, the crown, the effects
+ * and potions, the mana and spells, and the staffs, tomes and the soul bottle that use them.
+ *
+ * <p>These use survival mock players (a plain {@link Player}): the mock <em>server</em> player of the game test helper
+ * counts as being in creative, which skips the costs these checks are about.
+ */
+@GameTestHolder(GoblinsAndDungeons.MOD_ID)
+@PrefixGameTestTemplate(false)
+public final class GoblinsGameTests {
+
+    private static final String EMPTY = EmptyGameTestStructure.EMPTY;
+    private static final BlockPos SPOT = new BlockPos(3, 1, 3);
+    private static final double EPSILON = 1.0E-4D;
+
+    private static Player survivalPlayer(GameTestHelper helper) {
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        Vec3 at = helper.absoluteVec(new Vec3(SPOT.getX() + 0.5D, SPOT.getY(), SPOT.getZ() + 0.5D));
+        player.moveTo(at.x, at.y, at.z);
+        return player;
+    }
+
+    private static Zombie stillZombie(GameTestHelper helper, int x, int z) {
+        Zombie zombie = helper.spawn(EntityType.ZOMBIE, x, 1, z);
+        zombie.setNoAi(true);
+        zombie.setPersistenceRequired();
+        return zombie;
+    }
+
+    private static void assertNear(GameTestHelper helper, double expected, double actual, String what) {
+        helper.assertTrue(Math.abs(expected - actual) < EPSILON, what + ": expected " + expected + " but was " + actual);
+    }
+
+    // ---- blocks (phase 1) ----
+
+    @GameTest(template = EMPTY)
+    public static void urnTakesWaterAndTnt(GameTestHelper helper) {
+        Player player = survivalPlayer(helper);
+        helper.setBlock(SPOT, BlockInit.URN.get());
+        BlockPos pos = helper.absolutePos(SPOT);
+        BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(pos), net.minecraft.core.Direction.UP, pos, false);
+
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.WATER_BUCKET));
+        helper.getLevel().getBlockState(pos).useItemOn(player.getMainHandItem(), helper.getLevel(), player, InteractionHand.MAIN_HAND, hit);
+        BlockState filled = helper.getLevel().getBlockState(pos);
+        helper.assertTrue(filled.getValue(UrnBlock.HAS_WATER), "the urn should hold the water");
+        helper.assertTrue(player.getMainHandItem().is(Items.BUCKET), "the bucket should be emptied");
+
+        helper.setBlock(SPOT, BlockInit.URN.get());
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.TNT));
+        helper.getLevel().getBlockState(pos).useItemOn(player.getMainHandItem(), helper.getLevel(), player, InteractionHand.MAIN_HAND, hit);
+        helper.assertTrue(helper.getLevel().getBlockState(pos).getValue(UrnBlock.EXPLODING), "the urn should hold the TNT");
+        helper.assertTrue(player.getMainHandItem().isEmpty(), "the TNT should be used up");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void soulAshCampfireHasABlockEntityThatTakesFood(GameTestHelper helper) {
+        helper.setBlock(SPOT, BlockInit.SOUL_ASH_CAMPFIRE.get());
+        helper.assertTrue(helper.getBlockEntity(SPOT) instanceof SoulAshCampfireTileEntity, "the campfire should have its block entity");
+        SoulAshCampfireTileEntity campfire = (SoulAshCampfireTileEntity) helper.getBlockEntity(SPOT);
+        ItemStack beef = new ItemStack(Items.BEEF);
+        helper.assertTrue(campfire.getCookableRecipe(beef).isPresent(), "raw beef should have a campfire cooking recipe");
+        helper.assertTrue(campfire.placeFood(beef, 600), "the campfire should take the beef");
+        helper.assertTrue(beef.isEmpty(), "the beef should be on the campfire");
+        helper.succeed();
+    }
+
+    // ---- rings and the crown (phase 2) ----
+
+    @GameTest(template = EMPTY)
+    public static void ringOfHealthAddsAHeartInTheOffhand(GameTestHelper helper) {
+        Zombie zombie = stillZombie(helper, 2, 2);
+        double base = zombie.getMaxHealth();
+        zombie.setItemSlot(EquipmentSlot.OFFHAND, new ItemStack(ItemInit.RING_OF_HEALTH.get()));
+        helper.startSequence()
+                .thenIdle(2)
+                .thenExecute(() -> assertNear(helper, base + 2.0D, zombie.getMaxHealth(), "max health with the ring in the off-hand"))
+                .thenExecute(() -> zombie.setItemSlot(EquipmentSlot.OFFHAND, ItemStack.EMPTY))
+                .thenIdle(2)
+                .thenExecute(() -> assertNear(helper, base, zombie.getMaxHealth(), "max health without the ring"))
+                .thenSucceed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void ringOfHealthDoesNothingInTheMainHand(GameTestHelper helper) {
+        Zombie zombie = stillZombie(helper, 2, 2);
+        double base = zombie.getMaxHealth();
+        zombie.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(ItemInit.RING_OF_HEALTH.get()));
+        helper.startSequence()
+                .thenIdle(2)
+                .thenExecute(() -> assertNear(helper, base, zombie.getMaxHealth(), "max health with the ring in the main hand"))
+                .thenSucceed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void ringsGoToTheOffhandOnUse(GameTestHelper helper) {
+        Player player = survivalPlayer(helper);
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ItemInit.RING_OF_STEALTH.get()));
+        player.getMainHandItem().use(helper.getLevel(), player, InteractionHand.MAIN_HAND);
+        helper.assertTrue(player.getItemBySlot(EquipmentSlot.OFFHAND).is(ItemInit.RING_OF_STEALTH.get()), "the ring should be in the off-hand");
+        helper.assertTrue(player.getMainHandItem().isEmpty(), "the main hand should be empty");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void ringsHaveTheirDurability(GameTestHelper helper) {
+        for (Item ring : new Item[]{ItemInit.RING_OF_HEALTH.get(), ItemInit.RING_OF_STEALTH.get(), ItemInit.RING_OF_EXPERIENCE.get(), ItemInit.RING_OF_GLORY.get()}) {
+            helper.assertTrue(new ItemStack(ring).getMaxDamage() == 126, ring + " should have durability 126");
+            helper.assertTrue(new ItemStack(ring).getMaxStackSize() == 1, ring + " should not stack");
+        }
+        helper.assertTrue(new ItemStack(ItemInit.GOBLIN_CROWN.get()).getMaxDamage() == 77, "the crown should last as long as a golden helmet");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void ringOfGloryHealsOnAKillAndWearsDown(GameTestHelper helper) {
+        Player player = survivalPlayer(helper);
+        player.setHealth(10.0F);
+        ItemStack ring = new ItemStack(ItemInit.RING_OF_GLORY.get());
+        player.setItemSlot(EquipmentSlot.OFFHAND, ring);
+        Zombie zombie = stillZombie(helper, 2, 2);
+        zombie.hurt(helper.getLevel().damageSources().playerAttack(player), 1000.0F);
+        helper.assertTrue(!zombie.isAlive(), "the zombie should be dead");
+        assertNear(helper, 12.0D, player.getHealth(), "health after killing a 20 health zombie (2 hearts)");
+        helper.assertTrue(ring.getDamageValue() == 1, "the ring should be worn down by 1");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void withoutTheRingAKillHealsNothing(GameTestHelper helper) {
+        Player player = survivalPlayer(helper);
+        player.setHealth(10.0F);
+        Zombie zombie = stillZombie(helper, 2, 2);
+        zombie.hurt(helper.getLevel().damageSources().playerAttack(player), 1000.0F);
+        assertNear(helper, 10.0D, player.getHealth(), "health after a kill without the ring");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void ringOfExperienceAddsAPointToAKill(GameTestHelper helper) {
+        Player player = survivalPlayer(helper);
+        player.setItemSlot(EquipmentSlot.OFFHAND, new ItemStack(ItemInit.RING_OF_EXPERIENCE.get()));
+        Zombie zombie = stillZombie(helper, 2, 2);
+        zombie.hurt(helper.getLevel().damageSources().playerAttack(player), 1000.0F);
+        helper.startSequence()
+                .thenIdle(2)
+                .thenExecute(() -> helper.assertTrue(droppedExperience(helper) == 6, "a zombie drops 5 experience, 6 with the ring, but dropped " + droppedExperience(helper)))
+                .thenSucceed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void aKillWithoutTheRingDropsTheUsualExperience(GameTestHelper helper) {
+        Player player = survivalPlayer(helper);
+        Zombie zombie = stillZombie(helper, 2, 2);
+        zombie.hurt(helper.getLevel().damageSources().playerAttack(player), 1000.0F);
+        helper.startSequence()
+                .thenIdle(2)
+                .thenExecute(() -> helper.assertTrue(droppedExperience(helper) == 5, "a zombie drops 5 experience, but dropped " + droppedExperience(helper)))
+                .thenSucceed();
+    }
+
+    private static int droppedExperience(GameTestHelper helper) {
+        return helper.getLevel().getEntitiesOfClass(ExperienceOrb.class, helper.getBounds().inflate(2.0D))
+                .stream().mapToInt(ExperienceOrb::getValue).sum();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void gloryRingTableMatches1182(GameTestHelper helper) {
+        int[][] expected = {{1, 1}, {15, 1}, {16, 2}, {20, 2}, {30, 2}, {31, 3}, {45, 3}, {46, 4}, {60, 4}, {61, 0}, {75, 0}, {76, 5}, {90, 5}, {91, 6},
+                {150, 9}, {151, 10}, {285, 18}, {286, 19}, {300, 19}, {301, 20}, {1000, 20}};
+        for (int[] row : expected) {
+            helper.assertTrue(superlord.goblinsanddungeons.common.RingEvents.gloryHeal(row[0]) == row[1],
+                    "max health " + row[0] + " should heal " + row[1] + " but healed " + superlord.goblinsanddungeons.common.RingEvents.gloryHeal(row[0]));
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void crownWeakensTheNearestMonsterWhileWorn(GameTestHelper helper) {
+        Player player = survivalPlayer(helper);
+        ItemStack crown = new ItemStack(ItemInit.GOBLIN_CROWN.get());
+        player.setItemSlot(EquipmentSlot.HEAD, crown);
+        Zombie zombie = stillZombie(helper, 2, 2);
+        crown.getItem().inventoryTick(crown, helper.getLevel(), player, 39, false);
+        MobEffectInstance weakness = zombie.getEffect(MobEffects.WEAKNESS);
+        helper.assertTrue(weakness != null, "the zombie should be weakened");
+        helper.assertTrue(weakness.getAmplifier() == 0, "a monster that is no goblin gets Weakness I");
+        helper.assertTrue(weakness.getDuration() == 1200, "the weakness should last a minute");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void crownDoesNothingOutsideTheHeadSlot(GameTestHelper helper) {
+        Player player = survivalPlayer(helper);
+        ItemStack crown = new ItemStack(ItemInit.GOBLIN_CROWN.get());
+        player.getInventory().setItem(0, crown);
+        Zombie zombie = stillZombie(helper, 2, 2);
+        crown.getItem().inventoryTick(crown, helper.getLevel(), player, 0, true);
+        helper.assertTrue(zombie.getEffect(MobEffects.WEAKNESS) == null, "a crown in the hotbar should not weaken anything");
+        helper.succeed();
+    }
+
+    // ---- effects and potions (phase 2) ----
+
+    @GameTest(template = EMPTY)
+    public static void ogresMightAddsDamageAndSlowsAttacks(GameTestHelper helper) {
+        Player player = survivalPlayer(helper);
+        double damage = player.getAttributeValue(Attributes.ATTACK_DAMAGE);
+        double speed = player.getAttributeValue(Attributes.ATTACK_SPEED);
+        player.addEffect(new MobEffectInstance(EffectInit.MIGHT, 600));
+        assertNear(helper, damage + 3.0D, player.getAttributeValue(Attributes.ATTACK_DAMAGE), "attack damage with Might I");
+        assertNear(helper, speed * 0.9D, player.getAttributeValue(Attributes.ATTACK_SPEED), "attack speed with Might I");
+        player.removeAllEffects();
+        player.addEffect(new MobEffectInstance(EffectInit.MIGHT, 600, 1));
+        assertNear(helper, damage + 6.0D, player.getAttributeValue(Attributes.ATTACK_DAMAGE), "attack damage with Might II");
+        player.removeAllEffects();
+        assertNear(helper, damage, player.getAttributeValue(Attributes.ATTACK_DAMAGE), "attack damage once the effect is gone");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void paralysisFreezesMovementJumpsAndAttacks(GameTestHelper helper) {
+        Player player = survivalPlayer(helper);
+        helper.assertTrue(player.getAttributeValue(Attributes.MOVEMENT_SPEED) > 0.0D, "the player should be able to move at first");
+        player.addEffect(new MobEffectInstance(EffectInit.PARALYSIS, 150));
+        assertNear(helper, 0.0D, player.getAttributeValue(Attributes.MOVEMENT_SPEED), "movement speed while paralysed");
+        assertNear(helper, 0.0D, player.getAttributeValue(Attributes.JUMP_STRENGTH), "jump strength while paralysed");
+        assertNear(helper, 0.0D, player.getAttributeValue(Attributes.ATTACK_SPEED), "attack speed while paralysed");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void ogresMightIsBrewedFromAnAwkwardPotionAndATusk(GameTestHelper helper) {
+        var brewing = helper.getLevel().potionBrewing();
+        ItemStack awkward = PotionContents.createItemStack(Items.POTION, Potions.AWKWARD);
+        ItemStack might = brewing.mix(new ItemStack(ItemInit.OGRE_TUSK.get()), awkward);
+        helper.assertTrue(PotionContents.createItemStack(Items.POTION, EffectInit.OGRES_MIGHT).getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY)
+                .potion().equals(might.getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY).potion()), "an awkward potion and an ogre's tusk should make Ogre's Might");
+        ItemStack strong = brewing.mix(new ItemStack(Items.GLOWSTONE_DUST), might);
+        helper.assertTrue(strong.getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY).potion().orElseThrow().is(EffectInit.OGRES_MIGHT_STRONG.getId()), "glowstone should make it strong");
+        ItemStack lasting = brewing.mix(new ItemStack(Items.REDSTONE), might);
+        helper.assertTrue(lasting.getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY).potion().orElseThrow().is(EffectInit.OGRES_MIGHT_LONG.getId()), "redstone should make it last");
+        helper.succeed();
+    }
+
+    // ---- mana, spells and what uses them (phase 2) ----
+
+    @GameTest(template = EMPTY)
+    public static void manaIsClampedAndStartsEmpty(GameTestHelper helper) {
+        Player player = survivalPlayer(helper);
+        helper.assertTrue(player.getData(AttachmentInit.MANA).mana() == 0, "a new player has no mana");
+        player.setData(AttachmentInit.MANA, player.getData(AttachmentInit.MANA).add(50));
+        helper.assertTrue(player.getData(AttachmentInit.MANA).mana() == PlayerMana.MAX_MANA, "mana should stop at the maximum");
+        player.setData(AttachmentInit.MANA, player.getData(AttachmentInit.MANA).sub(50));
+        helper.assertTrue(player.getData(AttachmentInit.MANA).mana() == 0, "mana should stop at zero");
+        helper.assertTrue(player.getData(AttachmentInit.SPELLS).equals(PlayerSpells.NONE), "a new player knows no spells");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void spellTomesTeachTheirSpellOnceAndAreUsedUp(GameTestHelper helper) {
+        Player player = survivalPlayer(helper);
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ItemInit.SOUL_JUMP_SPELL_TOME.get()));
+        player.getMainHandItem().use(helper.getLevel(), player, InteractionHand.MAIN_HAND);
+        helper.assertTrue(player.getData(AttachmentInit.SPELLS).knowsSoulJump(), "the player should know Soul Jump");
+        helper.assertTrue(!player.getData(AttachmentInit.SPELLS).knowsSoulBullet(), "the player should not know Soul Bullet");
+        helper.assertTrue(player.getMainHandItem().isEmpty(), "the tome should be used up");
+
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ItemInit.SOUL_JUMP_SPELL_TOME.get()));
+        player.getMainHandItem().use(helper.getLevel(), player, InteractionHand.MAIN_HAND);
+        helper.assertTrue(!player.getMainHandItem().isEmpty(), "a tome of a spell the player knows should be kept");
+
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ItemInit.SOUL_BULLET_SPELL_TOME.get()));
+        player.getMainHandItem().use(helper.getLevel(), player, InteractionHand.MAIN_HAND);
+        helper.assertTrue(player.getData(AttachmentInit.SPELLS).equals(new PlayerSpells(true, true)), "the player should know both spells");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void bottledSoulsRestoreManaAndLeaveABottle(GameTestHelper helper) {
+        Player player = survivalPlayer(helper);
+        ItemStack souls = new ItemStack(ItemInit.BOTTLED_SOULS.get());
+        ItemStack result = souls.finishUsingItem(helper.getLevel(), player);
+        helper.assertTrue(player.getData(AttachmentInit.MANA).mana() == 4, "drinking should restore 4 mana");
+        helper.assertTrue(result.is(Items.GLASS_BOTTLE), "an empty bottle should be left");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void soulJumpStaffCostsManaAndDurability(GameTestHelper helper) {
+        Player player = survivalPlayer(helper);
+        player.setData(AttachmentInit.MANA, new PlayerMana(10));
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ItemInit.STAFF_JUMP.get()));
+        player.getMainHandItem().use(helper.getLevel(), player, InteractionHand.MAIN_HAND);
+        helper.assertTrue(player.getData(AttachmentInit.MANA).mana() == 8, "a jump should cost 2 mana");
+        helper.assertTrue(player.getMainHandItem().getDamageValue() == 1, "a jump should cost 1 durability");
+        assertNear(helper, 0.5D, player.getDeltaMovement().y, "the upward push");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void soulJumpStaffNeedsMana(GameTestHelper helper) {
+        Player player = survivalPlayer(helper);
+        player.setData(AttachmentInit.MANA, new PlayerMana(1));
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ItemInit.STAFF_JUMP.get()));
+        player.getMainHandItem().use(helper.getLevel(), player, InteractionHand.MAIN_HAND);
+        helper.assertTrue(player.getData(AttachmentInit.MANA).mana() == 1, "no mana should be spent");
+        helper.assertTrue(player.getMainHandItem().getDamageValue() == 0, "the staff should not wear");
+        assertNear(helper, 0.0D, player.getDeltaMovement().y, "the upward push");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void sneakingSwitchesStaffsKeepingTheirDamage(GameTestHelper helper) {
+        Player player = survivalPlayer(helper);
+        player.setShiftKeyDown(true);
+
+        ItemStack plain = new ItemStack(ItemInit.STAFF_AMETHYST.get());
+        plain.setDamageValue(40);
+        player.setItemInHand(InteractionHand.MAIN_HAND, plain);
+        player.getMainHandItem().use(helper.getLevel(), player, InteractionHand.MAIN_HAND);
+        helper.assertTrue(player.getMainHandItem().is(ItemInit.STAFF_AMETHYST.get()), "a player who knows no spell keeps the plain staff");
+
+        player.setData(AttachmentInit.SPELLS, new PlayerSpells(false, true));
+        player.getMainHandItem().use(helper.getLevel(), player, InteractionHand.MAIN_HAND);
+        helper.assertTrue(player.getMainHandItem().is(ItemInit.STAFF_JUMP.get()), "the plain staff should become the Soul Jump staff");
+        helper.assertTrue(player.getMainHandItem().getDamageValue() == 40, "the damage should be kept");
+
+        player.getMainHandItem().use(helper.getLevel(), player, InteractionHand.MAIN_HAND);
+        helper.assertTrue(player.getMainHandItem().is(ItemInit.STAFF_AMETHYST.get()), "the Soul Jump staff should go back to the plain one");
+
+        player.setData(AttachmentInit.SPELLS, new PlayerSpells(true, true));
+        player.getMainHandItem().use(helper.getLevel(), player, InteractionHand.MAIN_HAND);
+        helper.assertTrue(player.getMainHandItem().is(ItemInit.STAFF_BULLET.get()), "knowing Soul Bullet picks the Soul Bullet staff");
+        player.getMainHandItem().use(helper.getLevel(), player, InteractionHand.MAIN_HAND);
+        helper.assertTrue(player.getMainHandItem().is(ItemInit.STAFF_JUMP.get()), "the Soul Bullet staff should go on to the Soul Jump one for a player who knows it");
+        helper.succeed();
+    }
+}

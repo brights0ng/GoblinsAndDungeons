@@ -3,17 +3,17 @@ package superlord.goblinsanddungeons.common.item;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import superlord.goblinsanddungeons.init.ItemInit;
 
 import java.util.List;
 
-public class StealthRingItem extends Item {
+/** The Rings of Stealth, Experience and Glory (1.18.2 shared this one class; the effects live elsewhere). */
+public class StealthRingItem extends RingItem {
 
     public StealthRingItem(Properties properties) {
-        super(properties.stacksTo(1));
+        super(properties);
     }
 
     @Override
@@ -22,9 +22,11 @@ public class StealthRingItem extends Item {
         if (Screen.hasShiftDown()) {
             if (stack.is(ItemInit.RING_OF_STEALTH.get())) {
                 tooltipComponents.add(Component.translatable("stealth_ring").withStyle(ChatFormatting.GRAY));
-            } else if (stack.is(ItemInit.RING_OF_EXPERIENCE.get())) {
+            }
+            if (stack.is(ItemInit.RING_OF_EXPERIENCE.get())) {
                 tooltipComponents.add(Component.translatable("experience_ring").withStyle(ChatFormatting.GRAY));
-            } else if (stack.is(ItemInit.RING_OF_GLORY.get())) {
+            }
+            if (stack.is(ItemInit.RING_OF_GLORY.get())) {
                 tooltipComponents.add(Component.translatable("glory_ring").withStyle(ChatFormatting.GRAY));
             }
         } else {

@@ -1,5 +1,6 @@
 package superlord.goblinsanddungeons.init;
 
+import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -26,17 +27,21 @@ public class ItemInit {
 
     public static final DeferredRegister.Items REGISTER = DeferredRegister.createItems(GoblinsAndDungeons.MOD_ID);
 
+    private static final int RING_DURABILITY = 126;
+
     // Equipment & Wearables
     public static final DeferredItem<GoblinCrownItem> GOBLIN_CROWN = REGISTER.register("goblin_crown", () ->
-            new GoblinCrownItem(new Item.Properties().durability(250)));
+            new GoblinCrownItem(ArmorInit.GOBLIN_CROWN, new Item.Properties()
+                    .durability(ArmorItem.Type.HELMET.getDurability(ArmorInit.GOBLIN_CROWN_DURABILITY_FACTOR))));
+    // The 1.18.2 rings were off-hand armor items of durability 18 * 7 = 126 (the off-hand's slot index times the ring material's factor).
     public static final DeferredItem<HealthRingItem> RING_OF_HEALTH = REGISTER.register("ring_of_health", () ->
-            new HealthRingItem(new Item.Properties()));
+            new HealthRingItem(new Item.Properties().durability(RING_DURABILITY)));
     public static final DeferredItem<StealthRingItem> RING_OF_STEALTH = REGISTER.register("ring_of_stealth", () ->
-            new StealthRingItem(new Item.Properties()));
+            new StealthRingItem(new Item.Properties().durability(RING_DURABILITY)));
     public static final DeferredItem<StealthRingItem> RING_OF_EXPERIENCE = REGISTER.register("ring_of_experience", () ->
-            new StealthRingItem(new Item.Properties()));
+            new StealthRingItem(new Item.Properties().durability(RING_DURABILITY)));
     public static final DeferredItem<StealthRingItem> RING_OF_GLORY = REGISTER.register("ring_of_glory", () ->
-            new StealthRingItem(new Item.Properties()));
+            new StealthRingItem(new Item.Properties().durability(RING_DURABILITY)));
 
     // Staves
     public static final DeferredItem<StaffItem> STAFF_AMETHYST = REGISTER.register("staff_amethyst", () ->
