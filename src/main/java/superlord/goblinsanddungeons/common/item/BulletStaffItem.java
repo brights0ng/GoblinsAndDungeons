@@ -2,16 +2,22 @@ package superlord.goblinsanddungeons.common.item;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.stats.Stats;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
+import superlord.goblinsanddungeons.common.entity.SoulBullet;
 import superlord.goblinsanddungeons.config.GoblinsDungeonsConfig;
 import superlord.goblinsanddungeons.init.AttachmentInit;
 import superlord.goblinsanddungeons.init.ItemInit;
+import superlord.goblinsanddungeons.init.SoundInit;
+import superlord.goblinsanddungeons.magic.PlayerMana;
 
 import java.util.List;
 
@@ -35,8 +41,24 @@ public class BulletStaffItem extends Item {
             }
             return InteractionResultHolder.sidedSuccess(player.getItemInHand(hand), world.isClientSide());
         }
-        // Casting (a Soul Bullet projectile, 1 mana and 1 durability, needs mana above 0 unless creative) comes back with
-        // the SoulBullet entity in phase 3; until then using the staff does nothing and costs nothing.
+
+        PlayerMana mana = player.getData(AttachmentInit.MANA);
+        if (mana.mana() > 0 || player.isCreative()) {
+            world.playSound((Player) null, player.getX(), player.getY(), player.getZ(), SoundInit.SOUL_BULLET_LAUNCH.get(), SoundSource.NEUTRAL, 0.5F, 0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F));
+            if (!world.isClientSide()) {
+                SoulBullet soulBullet = new SoulBullet(world, player);
+                soulBullet.getItem();
+                soulBullet.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, 1.5F, 1.0F);
+                world.addFreshEntity(soulBullet);
+                if (!player.isCreative()) {
+                    stack.hurtAndBreak(1, player, LivingEntity.getSlotForHand(hand));
+                    player.setData(AttachmentInit.MANA, mana.sub(1));
+                }
+            }
+            player.awardStat(Stats.ITEM_USED.get(this));
+            return InteractionResultHolder.sidedSuccess(stack, world.isClientSide());
+        }
+
         return InteractionResultHolder.pass(stack);
     }
 

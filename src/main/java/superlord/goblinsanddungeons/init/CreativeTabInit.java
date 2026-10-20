@@ -24,6 +24,18 @@ public class CreativeTabInit {
                         output.accept(ItemInit.RING_OF_EXPERIENCE.get());
                         output.accept(ItemInit.RING_OF_GLORY.get());
 
+                        // Spawn Eggs
+                        output.accept(ItemInit.GOB_SPAWN_EGG.get());
+                        output.accept(ItemInit.HOBGOB_SPAWN_EGG.get());
+                        output.accept(ItemInit.GOBLO_SPAWN_EGG.get());
+                        output.accept(ItemInit.GARCH_SPAWN_EGG.get());
+                        output.accept(ItemInit.GOOM_SPAWN_EGG.get());
+                        output.accept(ItemInit.MIMIC_SPAWN_EGG.get());
+                        output.accept(ItemInit.GOBBER_SPAWN_EGG.get());
+                        output.accept(ItemInit.OGRE_SPAWN_EGG.get());
+                        output.accept(ItemInit.GOBLIN_KING_SPAWN_EGG.get());
+                        output.accept(ItemInit.BEHOLDER_SPAWN_EGG.get());
+
                         // Staves
                         output.accept(ItemInit.STAFF_AMETHYST.get());
                         output.accept(ItemInit.STAFF_BULLET.get());

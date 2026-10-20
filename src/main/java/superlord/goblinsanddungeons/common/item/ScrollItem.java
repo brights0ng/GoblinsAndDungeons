@@ -10,6 +10,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+import superlord.goblinsanddungeons.common.entity.SoulBullet;
 import superlord.goblinsanddungeons.config.GoblinsDungeonsConfig;
 import superlord.goblinsanddungeons.init.ParticleInit;
 import superlord.goblinsanddungeons.init.SoundInit;
@@ -55,9 +56,17 @@ public class ScrollItem extends Item {
         ItemStack stack = player.getItemInHand(hand);
         if (GoblinsDungeonsConfig.magicalWorld) {
             if (this.type == SpellType.SOUL_BULLET) {
-                // The Soul Bullet projectile comes back with the SoulBullet entity in phase 3; until then the scroll is
-                // not used up.
-                return InteractionResultHolder.pass(stack);
+                world.playSound((Player) null, player.getX(), player.getY(), player.getZ(), SoundInit.SOUL_BULLET_LAUNCH.get(), SoundSource.NEUTRAL, 0.5F, 0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F));
+                if (!world.isClientSide()) {
+                    SoulBullet soulBullet = new SoulBullet(world, player);
+                    soulBullet.getItem();
+                    soulBullet.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, 1.5F, 1.0F);
+                    world.addFreshEntity(soulBullet);
+                    if (!player.isCreative()) {
+                        stack.shrink(1);
+                    }
+                }
+                player.awardStat(Stats.ITEM_USED.get(this));
             }
             if (this.type == SpellType.SOUL_JUMP) {
                 // The push is applied on both sides, as the client moves the player; the rest is the server's.

@@ -3,6 +3,7 @@ package superlord.goblinsanddungeons.init;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
+import net.neoforged.neoforge.common.DeferredSpawnEggItem;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import superlord.goblinsanddungeons.GoblinsAndDungeons;
@@ -42,6 +43,28 @@ public class ItemInit {
             new StealthRingItem(new Item.Properties().durability(RING_DURABILITY)));
     public static final DeferredItem<StealthRingItem> RING_OF_GLORY = REGISTER.register("ring_of_glory", () ->
             new StealthRingItem(new Item.Properties().durability(RING_DURABILITY)));
+
+    // Spawn Eggs
+    public static final DeferredItem<DeferredSpawnEggItem> GOB_SPAWN_EGG = REGISTER.register("gob_spawn_egg", () ->
+            new DeferredSpawnEggItem(EntityInit.GOB, 0x647D14, 0xA7A322, new Item.Properties()));
+    public static final DeferredItem<DeferredSpawnEggItem> HOBGOB_SPAWN_EGG = REGISTER.register("hobgob_spawn_egg", () ->
+            new DeferredSpawnEggItem(EntityInit.HOBGOB, 0x261F3A, 0x9163B8, new Item.Properties()));
+    public static final DeferredItem<DeferredSpawnEggItem> GOBLO_SPAWN_EGG = REGISTER.register("goblo_spawn_egg", () ->
+            new DeferredSpawnEggItem(EntityInit.GOBLO, 0xD9BE48, 0x843C8B, new Item.Properties()));
+    public static final DeferredItem<DeferredSpawnEggItem> GARCH_SPAWN_EGG = REGISTER.register("garch_spawn_egg", () ->
+            new DeferredSpawnEggItem(EntityInit.GARCH, 0x992318, 0x2C394C, new Item.Properties()));
+    public static final DeferredItem<DeferredSpawnEggItem> GOOM_SPAWN_EGG = REGISTER.register("goom_spawn_egg", () ->
+            new DeferredSpawnEggItem(EntityInit.GOOM, 0x468D70, 0x313533, new Item.Properties()));
+    public static final DeferredItem<DeferredSpawnEggItem> MIMIC_SPAWN_EGG = REGISTER.register("mimic_spawn_egg", () ->
+            new DeferredSpawnEggItem(EntityInit.MIMIC, 0x8F691D, 0x407133, new Item.Properties()));
+    public static final DeferredItem<DeferredSpawnEggItem> GOBBER_SPAWN_EGG = REGISTER.register("gobber_spawn_egg", () ->
+            new DeferredSpawnEggItem(EntityInit.GOBBER, 0x677FE8, 0x82A190, new Item.Properties()));
+    public static final DeferredItem<DeferredSpawnEggItem> OGRE_SPAWN_EGG = REGISTER.register("ogre_spawn_egg", () ->
+            new DeferredSpawnEggItem(EntityInit.OGRE, 0xB8AE4D, 0x875D2A, new Item.Properties()));
+    public static final DeferredItem<DeferredSpawnEggItem> GOBLIN_KING_SPAWN_EGG = REGISTER.register("goblin_king_spawn_egg", () ->
+            new DeferredSpawnEggItem(EntityInit.GOB_KING, 0x79911E, 0xCF4466, new Item.Properties()));
+    public static final DeferredItem<DeferredSpawnEggItem> BEHOLDER_SPAWN_EGG = REGISTER.register("beholder_spawn_egg", () ->
+            new DeferredSpawnEggItem(EntityInit.BEHOLDER, 0xD65286, 0x9417A1, new Item.Properties()));
 
     // Staves
     public static final DeferredItem<StaffItem> STAFF_AMETHYST = REGISTER.register("staff_amethyst", () ->

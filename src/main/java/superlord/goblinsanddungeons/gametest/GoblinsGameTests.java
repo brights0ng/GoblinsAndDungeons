@@ -10,6 +10,8 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ExperienceOrb;
+import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.entity.player.Player;
@@ -21,16 +23,35 @@ import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import superlord.goblinsanddungeons.GoblinsAndDungeons;
 import superlord.goblinsanddungeons.common.blocks.UrnBlock;
+import superlord.goblinsanddungeons.common.entity.Beholder;
+import superlord.goblinsanddungeons.common.entity.BlindnessOrb;
+import superlord.goblinsanddungeons.common.entity.ExplosiveOrb;
+import superlord.goblinsanddungeons.common.entity.Garch;
+import superlord.goblinsanddungeons.common.entity.Gob;
+import superlord.goblinsanddungeons.common.entity.GobKing;
+import superlord.goblinsanddungeons.common.entity.Gobber;
+import superlord.goblinsanddungeons.common.entity.GoblinSoulBullet;
+import superlord.goblinsanddungeons.common.entity.Goblo;
+import superlord.goblinsanddungeons.common.entity.Goom;
+import superlord.goblinsanddungeons.common.entity.HobGob;
+import superlord.goblinsanddungeons.common.entity.LevitationOrb;
+import superlord.goblinsanddungeons.common.entity.Mimic;
+import superlord.goblinsanddungeons.common.entity.Ogre;
+import superlord.goblinsanddungeons.common.entity.SoulBullet;
+import superlord.goblinsanddungeons.common.entity.TeleportationOrb;
+import superlord.goblinsanddungeons.common.entity.WeaknessOrb;
 import superlord.goblinsanddungeons.common.entity.tile.SoulAshCampfireTileEntity;
 import superlord.goblinsanddungeons.datagen.EmptyGameTestStructure;
 import superlord.goblinsanddungeons.init.AttachmentInit;
 import superlord.goblinsanddungeons.init.BlockInit;
 import superlord.goblinsanddungeons.init.EffectInit;
+import superlord.goblinsanddungeons.init.EntityInit;
 import superlord.goblinsanddungeons.init.ItemInit;
 import superlord.goblinsanddungeons.magic.PlayerMana;
 import superlord.goblinsanddungeons.magic.PlayerSpells;
@@ -372,6 +393,154 @@ public final class GoblinsGameTests {
         helper.assertTrue(player.getMainHandItem().is(ItemInit.STAFF_BULLET.get()), "knowing Soul Bullet picks the Soul Bullet staff");
         player.getMainHandItem().use(helper.getLevel(), player, InteractionHand.MAIN_HAND);
         helper.assertTrue(player.getMainHandItem().is(ItemInit.STAFF_JUMP.get()), "the Soul Bullet staff should go on to the Soul Jump one for a player who knows it");
+        helper.succeed();
+    }
+
+    // ---- entities, projectiles, staffs, scrolls and stealth (phase 3) ----
+
+    @GameTest(template = EMPTY)
+    public static void allTenMobsSpawnWithAttributesAndEquipment(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var difficulty = level.getCurrentDifficultyAt(helper.absolutePos(SPOT));
+
+        Gob gob = helper.spawnWithNoFreeWill(EntityInit.GOB.get(), 1, 1, 1);
+        gob.finalizeSpawn(level, difficulty, MobSpawnType.COMMAND, null);
+        assertNear(helper, 10.0D, gob.getMaxHealth(), "Gob max health");
+        helper.assertTrue(gob.getMainHandItem().is(Items.STONE_SWORD), "Gob should spawn with a stone sword");
+
+        HobGob hobGob = helper.spawnWithNoFreeWill(EntityInit.HOBGOB.get(), 2, 1, 1);
+        assertNear(helper, 20.0D, hobGob.getMaxHealth(), "HobGob max health");
+        assertNear(helper, 6.0D, hobGob.getAttributeValue(Attributes.ATTACK_DAMAGE), "HobGob attack damage");
+
+        Goblo goblo = helper.spawnWithNoFreeWill(EntityInit.GOBLO.get(), 3, 1, 1);
+        assertNear(helper, 14.0D, goblo.getMaxHealth(), "Goblo max health");
+
+        Garch garch = helper.spawnWithNoFreeWill(EntityInit.GARCH.get(), 4, 1, 1);
+        garch.finalizeSpawn(level, difficulty, MobSpawnType.COMMAND, null);
+        assertNear(helper, 10.0D, garch.getMaxHealth(), "Garch max health");
+        helper.assertTrue(garch.getMainHandItem().is(Items.BOW), "Garch should spawn with a bow");
+
+        Goom goom = helper.spawnWithNoFreeWill(EntityInit.GOOM.get(), 5, 1, 1);
+        assertNear(helper, 8.0D, goom.getMaxHealth(), "Goom max health");
+
+        Gobber gobber = helper.spawnWithNoFreeWill(EntityInit.GOBBER.get(), 1, 1, 2);
+        assertNear(helper, 25.0D, gobber.getMaxHealth(), "Gobber max health");
+
+        Ogre ogre = helper.spawnWithNoFreeWill(EntityInit.OGRE.get(), 2, 1, 2);
+        assertNear(helper, 200.0D, ogre.getMaxHealth(), "Ogre max health");
+        assertNear(helper, 10.0D, ogre.getAttributeValue(Attributes.ATTACK_DAMAGE), "Ogre attack damage");
+        assertNear(helper, 1.0D, ogre.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE), "Ogre knockback resistance");
+
+        GobKing gobKing = helper.spawnWithNoFreeWill(EntityInit.GOB_KING.get(), 3, 1, 2);
+        gobKing.finalizeSpawn(level, difficulty, MobSpawnType.COMMAND, null);
+        assertNear(helper, 150.0D, gobKing.getMaxHealth(), "Goblin King max health");
+        helper.assertTrue(gobKing.getMainHandItem().is(ItemInit.STAFF_AMETHYST.get()), "Goblin King should spawn with an amethyst staff");
+
+        Mimic mimic = helper.spawnWithNoFreeWill(EntityInit.MIMIC.get(), 4, 1, 2);
+        mimic.finalizeSpawn(level, difficulty, MobSpawnType.COMMAND, null);
+        assertNear(helper, 12.0D, mimic.getMaxHealth(), "Mimic max health");
+        helper.assertTrue(mimic.isHiding(), "Mimic should start hiding on spawn");
+
+        Beholder beholder = helper.spawnWithNoFreeWill(EntityInit.BEHOLDER.get(), 5, 1, 2);
+        assertNear(helper, 200.0D, beholder.getMaxHealth(), "Beholder max health");
+        helper.assertTrue(beholder.isMultipartEntity(), "Beholder should be a multipart entity");
+        helper.assertTrue(beholder.getParts() != null && beholder.getParts().length == 6, "Beholder should have 6 sub-parts");
+
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void crownGivesWeaknessTwoToGoblinsAndHalvesVisibility(GameTestHelper helper) {
+        Player player = survivalPlayer(helper);
+        Gob gob = helper.spawnWithNoFreeWill(EntityInit.GOB.get(), 2, 1, 2);
+        double baseVis = player.getVisibilityPercent(gob);
+
+        ItemStack crown = new ItemStack(ItemInit.GOBLIN_CROWN.get());
+        player.setItemSlot(EquipmentSlot.HEAD, crown);
+        crown.getItem().inventoryTick(crown, helper.getLevel(), player, 39, false);
+
+        MobEffectInstance weakness = gob.getEffect(MobEffects.WEAKNESS);
+        helper.assertTrue(weakness != null, "the Gob should be weakened by the crown");
+        helper.assertTrue(weakness.getAmplifier() == 1, "a goblin gets Weakness II from the crown");
+        assertNear(helper, baseVis * 0.5D, player.getVisibilityPercent(gob), "player visibility to a goblin while wearing the crown");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void ringOfStealthReducesVisibilityWhenCrouching(GameTestHelper helper) {
+        Player player = survivalPlayer(helper);
+        Zombie zombie = stillZombie(helper, 2, 2);
+        player.setShiftKeyDown(true);
+        player.setPose(Pose.CROUCHING);
+        double crouchingVisWithoutRing = player.getVisibilityPercent(zombie);
+
+        player.setItemSlot(EquipmentSlot.OFFHAND, new ItemStack(ItemInit.RING_OF_STEALTH.get()));
+        double crouchingVisWithRing = player.getVisibilityPercent(zombie);
+        assertNear(helper, crouchingVisWithoutRing * 0.8D, crouchingVisWithRing, "crouching visibility with Ring of Stealth in off-hand");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void soulBulletStaffFiresProjectileAndDamagesTarget(GameTestHelper helper) {
+        Player player = survivalPlayer(helper);
+        player.setData(AttachmentInit.MANA, new PlayerMana(10));
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ItemInit.STAFF_BULLET.get()));
+        player.getMainHandItem().use(helper.getLevel(), player, InteractionHand.MAIN_HAND);
+
+        helper.assertTrue(player.getData(AttachmentInit.MANA).mana() == 9, "firing a Soul Bullet should cost 1 mana");
+        helper.assertTrue(player.getMainHandItem().getDamageValue() == 1, "firing a Soul Bullet should cost 1 durability");
+        var bullets = helper.getLevel().getEntitiesOfClass(SoulBullet.class, helper.getBounds().inflate(4.0D));
+        helper.assertTrue(bullets.size() == 1, "a SoulBullet projectile should be spawned");
+
+        Zombie zombie = stillZombie(helper, 2, 2);
+        float before = zombie.getHealth();
+        bullets.get(0).onHitEntity(new EntityHitResult(zombie));
+        assertNear(helper, before - 4.0F, zombie.getHealth(), "SoulBullet should deal 4 magic damage on hit");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void scrollsCastSoulJumpAndSoulBulletWithoutMana(GameTestHelper helper) {
+        Player player = survivalPlayer(helper);
+        helper.assertTrue(player.getData(AttachmentInit.MANA).mana() == 0, "player starts with 0 mana");
+
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ItemInit.SOUL_JUMP_SCROLL.get()));
+        player.getMainHandItem().use(helper.getLevel(), player, InteractionHand.MAIN_HAND);
+        assertNear(helper, 0.7D, player.getDeltaMovement().y, "Soul Jump scroll upward velocity");
+        helper.assertTrue(player.getMainHandItem().isEmpty(), "Soul Jump scroll should be consumed");
+
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ItemInit.SOUL_BULLET_SCROLL.get()));
+        player.getMainHandItem().use(helper.getLevel(), player, InteractionHand.MAIN_HAND);
+        helper.assertTrue(player.getMainHandItem().isEmpty(), "Soul Bullet scroll should be consumed");
+        var bullets = helper.getLevel().getEntitiesOfClass(SoulBullet.class, helper.getBounds().inflate(4.0D));
+        helper.assertTrue(bullets.size() == 1, "Soul Bullet scroll should spawn a SoulBullet projectile");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void magicOrbsSpawnProjectilesAndApplyEffects(GameTestHelper helper) {
+        Player player = survivalPlayer(helper);
+        Item[] orbItems = {
+                ItemInit.BLINDNESS_ORB.get(),
+                ItemInit.LEVITATION_ORB.get(),
+                ItemInit.WEAKNESS_ORB.get(),
+                ItemInit.EXPLOSIVE_ORB.get(),
+                ItemInit.TELEPORTATION_ORB.get()
+        };
+        for (Item orbItem : orbItems) {
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(orbItem, 2));
+            player.getMainHandItem().use(helper.getLevel(), player, InteractionHand.MAIN_HAND);
+            helper.assertTrue(player.getMainHandItem().getCount() == 1, orbItem + " should consume 1 orb on throw");
+        }
+        helper.assertTrue(!helper.getLevel().getEntitiesOfClass(BlindnessOrb.class, helper.getBounds().inflate(4.0D)).isEmpty(), "BlindnessOrb entity spawned");
+        helper.assertTrue(!helper.getLevel().getEntitiesOfClass(LevitationOrb.class, helper.getBounds().inflate(4.0D)).isEmpty(), "LevitationOrb entity spawned");
+        helper.assertTrue(!helper.getLevel().getEntitiesOfClass(WeaknessOrb.class, helper.getBounds().inflate(4.0D)).isEmpty(), "WeaknessOrb entity spawned");
+        helper.assertTrue(!helper.getLevel().getEntitiesOfClass(ExplosiveOrb.class, helper.getBounds().inflate(4.0D)).isEmpty(), "ExplosiveOrb entity spawned");
+        helper.assertTrue(!helper.getLevel().getEntitiesOfClass(TeleportationOrb.class, helper.getBounds().inflate(4.0D)).isEmpty(), "TeleportationOrb entity spawned");
+
+        GoblinSoulBullet goblinBullet = new GoblinSoulBullet(helper.getLevel(), stillZombie(helper, 2, 2));
+        goblinBullet.onHitEntity(new EntityHitResult(player));
+        helper.assertTrue(player.hasEffect(MobEffects.MOVEMENT_SLOWDOWN), "GoblinSoulBullet should apply Slowness to a hit entity");
         helper.succeed();
     }
 }
