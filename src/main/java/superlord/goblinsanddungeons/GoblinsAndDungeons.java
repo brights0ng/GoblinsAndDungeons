@@ -35,6 +35,7 @@ import superlord.goblinsanddungeons.init.EntityInit;
 import superlord.goblinsanddungeons.init.ItemInit;
 import superlord.goblinsanddungeons.init.ParticleInit;
 import superlord.goblinsanddungeons.init.SoundInit;
+import superlord.goblinsanddungeons.init.StructureInit;
 import superlord.goblinsanddungeons.init.TileEntityInit;
 
 @Mod(GoblinsAndDungeons.MOD_ID)
@@ -56,6 +57,8 @@ public class GoblinsAndDungeons {
         TileEntityInit.REGISTER.register(modEventBus);
         SoundInit.REGISTER.register(modEventBus);
         CreativeTabInit.REGISTER.register(modEventBus);
+        StructureInit.STRUCTURES.register(modEventBus);
+        StructureInit.PIECES.register(modEventBus);
 
         modContainer.registerConfig(ModConfig.Type.CLIENT, GDConfigHolder.CLIENT_SPEC);
         modContainer.registerConfig(ModConfig.Type.SERVER, GDConfigHolder.SERVER_SPEC);

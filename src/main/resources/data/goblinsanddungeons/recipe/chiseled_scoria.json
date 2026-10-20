@@ -1,0 +1,16 @@
+{
+    "type":  "minecraft:crafting_shaped",
+    "pattern":  [
+                    "#",
+                    "#"
+                ],
+    "key":  {
+                "#":  {
+                          "item":  "goblinsanddungeons:polished_scoria_slab"
+                      }
+            },
+    "result":  {
+                   "id":  "goblinsanddungeons:chiseled_scoria",
+                   "count":  1
+               }
+}

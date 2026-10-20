@@ -1,0 +1,116 @@
+package superlord.goblinsanddungeons.common.world.structures;
+
+import java.util.Map;
+
+import com.google.common.collect.ImmutableMap;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.ServerLevelAccessor;
+import net.minecraft.world.level.StructureManager;
+import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.ChestBlockEntity;
+import net.minecraft.world.level.chunk.ChunkGenerator;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.level.levelgen.structure.StructurePieceAccessor;
+import net.minecraft.world.level.levelgen.structure.TemplateStructurePiece;
+import net.minecraft.world.level.levelgen.structure.pieces.StructurePieceSerializationContext;
+import net.minecraft.world.level.levelgen.structure.templatesystem.BlockIgnoreProcessor;
+import net.minecraft.world.level.levelgen.structure.templatesystem.ProtectedBlockProcessor;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
+import superlord.goblinsanddungeons.GoblinsAndDungeons;
+import superlord.goblinsanddungeons.common.entity.Garch;
+import superlord.goblinsanddungeons.common.entity.Gob;
+import superlord.goblinsanddungeons.init.EntityInit;
+import superlord.goblinsanddungeons.init.LootTableInit;
+import superlord.goblinsanddungeons.init.StructureInit;
+
+public class SmallGoblinCampStructurePiece {
+
+	private static final ResourceLocation smallGoblinCamp_Template = ResourceLocation.fromNamespaceAndPath(GoblinsAndDungeons.MOD_ID, "small_goblin_camp");
+
+	private static final Map<ResourceLocation, BlockPos> structurePos = ImmutableMap.of(smallGoblinCamp_Template, BlockPos.ZERO);
+
+	static final BlockPos PIVOT = new BlockPos(9, 0, 9);
+
+	public static void addStructure(StructureTemplateManager templateManager, BlockPos pos, Rotation rotation, StructurePieceAccessor pieceAccessor, RandomSource random) {
+		pieceAccessor.addPiece(new Piece(templateManager, smallGoblinCamp_Template, pos, rotation, 0));
+	}
+
+	public static class Piece extends TemplateStructurePiece {
+		public Piece(StructureTemplateManager templateManager, ResourceLocation location, BlockPos pos, Rotation rotation, int yOffset) {
+			super(StructureInit.SMALL_GOBLIN_CAMP_PIECE.get(), 0, templateManager, location, location.toString(), makeSettings(rotation), makePosition(location, pos, yOffset));
+		}
+
+		public Piece(StructureTemplateManager templateManager, CompoundTag tag) {
+			super(StructureInit.SMALL_GOBLIN_CAMP_PIECE.get(), tag, templateManager, (location) -> {
+				return makeSettings(Rotation.valueOf(tag.getString("Rot")));
+			});
+		}
+
+		private static StructurePlaceSettings makeSettings(Rotation rotation) {
+			BlockIgnoreProcessor blockignoreprocessor = BlockIgnoreProcessor.STRUCTURE_BLOCK;
+			return (new StructurePlaceSettings()).setRotation(rotation).setMirror(Mirror.NONE).setRotationPivot(PIVOT).addProcessor(blockignoreprocessor).addProcessor(new ProtectedBlockProcessor(BlockTags.FEATURES_CANNOT_REPLACE));
+		}
+
+		private static BlockPos makePosition(ResourceLocation location, BlockPos pos, int yOffset) {
+			return pos.offset(structurePos.getOrDefault(location, BlockPos.ZERO)).below(yOffset);
+		}
+
+		@Override
+		protected void addAdditionalSaveData(StructurePieceSerializationContext context, CompoundTag tag) {
+			super.addAdditionalSaveData(context, tag);
+			tag.putString("Rot", this.placeSettings.getRotation().name());
+		}
+
+		@Override
+		public void postProcess(WorldGenLevel worldIn, StructureManager structureManager, ChunkGenerator chunkGenerator, RandomSource random, BoundingBox box, ChunkPos chunkPos, BlockPos pos) {
+			BlockPos blockpos1 = this.templatePosition.offset(this.placeSettings.getRotationPivot());
+			int i = worldIn.getHeight(Heightmap.Types.WORLD_SURFACE_WG, blockpos1.getX(), blockpos1.getZ());
+			BlockPos blockpos2 = this.templatePosition;
+			this.templatePosition = new BlockPos(this.templatePosition.getX(), i - 2, this.templatePosition.getZ());
+			super.postProcess(worldIn, structureManager, chunkGenerator, random, box, chunkPos, pos);
+			this.templatePosition = blockpos2;
+		}
+
+		@Override
+		protected void handleDataMarker(String function, BlockPos pos, ServerLevelAccessor world, RandomSource rand, BoundingBox sbb) {
+			if ("chest".equals(function)) {
+				world.setBlock(pos, Blocks.AIR.defaultBlockState(), 2);
+				BlockEntity tileentity = world.getBlockEntity(pos.below());
+				if (tileentity instanceof ChestBlockEntity chest) {
+					chest.setLootTable(LootTableInit.CAMP_LOOT_TABLE, rand.nextLong());
+				}
+			}
+			if ("gob".equals(function)) {
+				world.setBlock(pos, Blocks.AIR.defaultBlockState(), 2);
+				Gob entity = EntityInit.GOB.get().create(world.getLevel());
+				if (entity != null) {
+					entity.setPos(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
+					entity.finalizeSpawn(world, world.getCurrentDifficultyAt(pos), MobSpawnType.STRUCTURE, null);
+					world.addFreshEntity(entity);
+				}
+			}
+			if ("garch".equals(function)) {
+				world.setBlock(pos, Blocks.AIR.defaultBlockState(), 2);
+				Garch entity = EntityInit.GARCH.get().create(world.getLevel());
+				if (entity != null) {
+					entity.setPos(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
+					entity.finalizeSpawn(world, world.getCurrentDifficultyAt(pos), MobSpawnType.STRUCTURE, null);
+					world.addFreshEntity(entity);
+				}
+			}
+		}
+	}
+}

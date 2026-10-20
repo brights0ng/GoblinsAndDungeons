@@ -1,0 +1,7 @@
+{
+  "type": "goblinsanddungeons:ruined_keep",
+  "biomes": "#goblinsanddungeons:has_structure/ruined_keep",
+  "spawn_overrides": {},
+  "step": "surface_structures",
+  "terrain_adaptation": "none"
+}

@@ -1,6 +1,12 @@
 package superlord.goblinsanddungeons.common;
 
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
+
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
@@ -17,8 +23,14 @@ import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.storage.loot.BuiltInLootTables;
+import net.minecraft.world.level.storage.loot.LootPool;
+import net.minecraft.world.level.storage.loot.LootTable;
+import net.minecraft.world.level.storage.loot.entries.LootPoolEntryContainer;
+import net.minecraft.world.level.storage.loot.entries.NestedLootTable;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.LootTableLoadEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
@@ -29,6 +41,7 @@ import superlord.goblinsanddungeons.config.GoblinsDungeonsConfig;
 import superlord.goblinsanddungeons.init.BlockInit;
 import superlord.goblinsanddungeons.init.GDTags;
 import superlord.goblinsanddungeons.init.ItemInit;
+import superlord.goblinsanddungeons.init.LootTableInit;
 
 @EventBusSubscriber(modid = GoblinsAndDungeons.MOD_ID)
 public class CommonEvents {
@@ -43,6 +56,43 @@ public class CommonEvents {
         }
         if (event.getEntity() instanceof Donkey donkey) {
             donkey.goalSelector.addGoal(4, new FollowOgreGoal((Animal) donkey, 1.0F));
+        }
+    }
+
+    @SubscribeEvent
+    public static void onLootLoad(LootTableLoadEvent event) {
+        if (GoblinsDungeonsConfig.magicalWorld) {
+            ResourceLocation name = event.getName();
+            if (name.equals(BuiltInLootTables.SIMPLE_DUNGEON.location())) {
+                LootPool pool = event.getTable().getPool("main");
+                if (pool != null) {
+                    addEntry(pool, getInjectEntry(LootTableInit.SIMPLE_DUNGEON_INJECT, 20, 1));
+                }
+            }
+            if (name.equals(BuiltInLootTables.ABANDONED_MINESHAFT.location())) {
+                LootPool pool = event.getTable().getPool("main");
+                if (pool != null) {
+                    addEntry(pool, getInjectEntry(LootTableInit.ABANDONED_MINESHAFT_INJECT, 20, 1));
+                }
+            }
+        }
+    }
+
+    private static LootPoolEntryContainer getInjectEntry(ResourceKey<LootTable> key, int weight, int quality) {
+        return NestedLootTable.lootTableReference(key).setWeight(weight).setQuality(quality).build();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void addEntry(LootPool pool, LootPoolEntryContainer entry) {
+        try {
+            Field entriesField = LootPool.class.getDeclaredField("entries");
+            entriesField.setAccessible(true);
+            List<LootPoolEntryContainer> current = (List<LootPoolEntryContainer>) entriesField.get(pool);
+            List<LootPoolEntryContainer> newEntries = new ArrayList<>(current);
+            newEntries.add(entry);
+            entriesField.set(pool, newEntries);
+        } catch (ReflectiveOperationException e) {
+            GoblinsAndDungeons.LOGGER.error("Failed to inject loot pool entry", e);
         }
     }
 

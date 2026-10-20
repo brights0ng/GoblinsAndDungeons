@@ -1,0 +1,10 @@
+{
+    "type":  "minecraft:stonecutting",
+    "ingredient":  {
+                       "item":  "goblinsanddungeons:polished_scoria"
+                   },
+    "result":  {
+                   "id":  "goblinsanddungeons:polished_scoria_vertical_slab",
+                   "count":  2
+               }
+}

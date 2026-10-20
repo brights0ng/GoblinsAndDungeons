@@ -1,0 +1,10 @@
+{
+    "type":  "minecraft:stonecutting",
+    "ingredient":  {
+                       "item":  "goblinsanddungeons:scoria"
+                   },
+    "result":  {
+                   "id":  "goblinsanddungeons:scoria_pillar",
+                   "count":  1
+               }
+}

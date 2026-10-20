@@ -1,0 +1,25 @@
+{
+  "replace": false,
+  "values": [
+    "goblinsanddungeons:scoria",
+    "goblinsanddungeons:polished_scoria",
+    "goblinsanddungeons:scoria_bricks",
+    "goblinsanddungeons:cracked_scoria_bricks",
+    "goblinsanddungeons:chiseled_scoria",
+    "goblinsanddungeons:chiseled_scoria_bricks",
+    "goblinsanddungeons:scoria_pillar",
+    "goblinsanddungeons:scoria_pavement",
+    "goblinsanddungeons:scoria_stairs",
+    "goblinsanddungeons:polished_scoria_stairs",
+    "goblinsanddungeons:scoria_brick_stairs",
+    "goblinsanddungeons:scoria_slab",
+    "goblinsanddungeons:polished_scoria_slab",
+    "goblinsanddungeons:scoria_brick_slab",
+    "goblinsanddungeons:scoria_vertical_slab",
+    "goblinsanddungeons:polished_scoria_vertical_slab",
+    "goblinsanddungeons:scoria_brick_vertical_slab",
+    "goblinsanddungeons:scoria_wall",
+    "goblinsanddungeons:polished_scoria_wall",
+    "goblinsanddungeons:scoria_brick_wall"
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "type": "goblinsanddungeons:medium_goblin_camp",
+  "biomes": "#goblinsanddungeons:has_structure/medium_goblin_camp",
+  "spawn_overrides": {},
+  "step": "surface_structures",
+  "terrain_adaptation": "none"
+}

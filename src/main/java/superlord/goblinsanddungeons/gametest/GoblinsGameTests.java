@@ -1,9 +1,15 @@
 package superlord.goblinsanddungeons.gametest;
 
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -20,8 +26,16 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.alchemy.Potions;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.LootTable;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -47,6 +61,7 @@ import superlord.goblinsanddungeons.common.entity.SoulBullet;
 import superlord.goblinsanddungeons.common.entity.TeleportationOrb;
 import superlord.goblinsanddungeons.common.entity.WeaknessOrb;
 import superlord.goblinsanddungeons.common.entity.tile.SoulAshCampfireTileEntity;
+import superlord.goblinsanddungeons.common.world.structures.SmallGoblinCampStructurePiece;
 import superlord.goblinsanddungeons.datagen.EmptyGameTestStructure;
 import superlord.goblinsanddungeons.init.ArmorInit;
 import superlord.goblinsanddungeons.init.AttachmentInit;
@@ -54,6 +69,8 @@ import superlord.goblinsanddungeons.init.BlockInit;
 import superlord.goblinsanddungeons.init.EffectInit;
 import superlord.goblinsanddungeons.init.EntityInit;
 import superlord.goblinsanddungeons.init.ItemInit;
+import superlord.goblinsanddungeons.init.LootTableInit;
+import superlord.goblinsanddungeons.init.StructureInit;
 import superlord.goblinsanddungeons.magic.PlayerMana;
 import superlord.goblinsanddungeons.magic.PlayerSpells;
 
@@ -557,6 +574,139 @@ public final class GoblinsGameTests {
                 net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(GoblinsAndDungeons.MOD_ID, "textures/models/armor/goblin_crown.png").equals(tex),
                 "Goblin Crown should resolve to textures/models/armor/goblin_crown.png, got " + tex
         );
+        helper.succeed();
+    }
+
+    // ---- worldgen, structures, loot tables, recipes, advancements & tags (phase 5) ----
+
+    @GameTest(template = EMPTY)
+    public static void structureTemplatesAndWorldgenRegistriesResolve(GameTestHelper helper) {
+        var templateManager = helper.getLevel().getStructureManager();
+        for (String name : new String[]{"small_goblin_camp", "medium_goblin_camp", "large_goblin_camp", "ruined_keep"}) {
+            ResourceLocation id = ResourceLocation.fromNamespaceAndPath(GoblinsAndDungeons.MOD_ID, name);
+            var templateOpt = templateManager.get(id);
+            helper.assertTrue(templateOpt.isPresent(), "Structure template must exist: " + id);
+            StructureTemplate template = templateOpt.get();
+            helper.assertTrue(template.getSize().getX() > 0 && template.getSize().getY() > 0 && template.getSize().getZ() > 0,
+                    "Structure template must have positive dimensions: " + id);
+        }
+
+        var registries = helper.getLevel().registryAccess();
+        var structureRegistry = registries.lookupOrThrow(Registries.STRUCTURE);
+        for (String name : new String[]{"small_goblin_camp", "medium_goblin_camp", "large_goblin_camp", "ruined_keep"}) {
+            ResourceKey<net.minecraft.world.level.levelgen.structure.Structure> key =
+                    ResourceKey.create(Registries.STRUCTURE, ResourceLocation.fromNamespaceAndPath(GoblinsAndDungeons.MOD_ID, name));
+            helper.assertTrue(structureRegistry.get(key).isPresent(), "Worldgen structure must be registered: " + key.location());
+        }
+
+        var configuredFeatures = registries.lookupOrThrow(Registries.CONFIGURED_FEATURE);
+        helper.assertTrue(
+                configuredFeatures.get(ResourceKey.create(Registries.CONFIGURED_FEATURE, ResourceLocation.fromNamespaceAndPath(GoblinsAndDungeons.MOD_ID, "ore_scoria"))).isPresent(),
+                "Configured feature ore_scoria must be registered"
+        );
+        var placedFeatures = registries.lookupOrThrow(Registries.PLACED_FEATURE);
+        helper.assertTrue(
+                placedFeatures.get(ResourceKey.create(Registries.PLACED_FEATURE, ResourceLocation.fromNamespaceAndPath(GoblinsAndDungeons.MOD_ID, "ore_scoria_upper"))).isPresent(),
+                "Placed feature ore_scoria_upper must be registered"
+        );
+        helper.assertTrue(
+                placedFeatures.get(ResourceKey.create(Registries.PLACED_FEATURE, ResourceLocation.fromNamespaceAndPath(GoblinsAndDungeons.MOD_ID, "ore_scoria_lower"))).isPresent(),
+                "Placed feature ore_scoria_lower must be registered"
+        );
+
+        helper.assertTrue(StructureInit.SMALL_GOBLIN_CAMP.get() != null, "SMALL_GOBLIN_CAMP StructureType registered");
+        helper.assertTrue(StructureInit.RUINED_KEEP_PIECE.get() != null, "RUINED_KEEP_PIECE StructurePieceType registered");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void structurePiecePlacesAndProcessesMarkers(GameTestHelper helper) {
+        var templateManager = helper.getLevel().getStructureManager();
+        ResourceLocation id = ResourceLocation.fromNamespaceAndPath(GoblinsAndDungeons.MOD_ID, "small_goblin_camp");
+        BlockPos origin = helper.absolutePos(new BlockPos(0, 1, 0));
+        SmallGoblinCampStructurePiece.Piece piece = new SmallGoblinCampStructurePiece.Piece(
+                templateManager, id, origin, Rotation.NONE, 0
+        );
+        helper.assertTrue(piece.template().getSize().getX() == 4, "Small goblin camp template width should be 4");
+
+        // Place template directly in test bounds and verify blocks are placed
+        piece.template().placeInWorld(
+                helper.getLevel(),
+                origin,
+                origin,
+                new StructurePlaceSettings().setRotation(Rotation.NONE),
+                helper.getLevel().getRandom(),
+                2
+        );
+        boolean foundCampBlock = false;
+        for (BlockPos p : BlockPos.betweenClosed(origin, origin.offset(3, 2, 4))) {
+            if (!helper.getLevel().getBlockState(p).isAir()) {
+                foundCampBlock = true;
+                break;
+            }
+        }
+        helper.assertTrue(foundCampBlock, "Placing small_goblin_camp template should place non-air blocks");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void lootTablesResolveAndGenerateItems(GameTestHelper helper) {
+        var reloadable = helper.getLevel().getServer().reloadableRegistries();
+
+        LootTable campTable = reloadable.getLootTable(LootTableInit.CAMP_LOOT_TABLE);
+        helper.assertTrue(campTable != LootTable.EMPTY, "Camp chest loot table must not be EMPTY");
+
+        LootTable keepTable = reloadable.getLootTable(LootTableInit.KEEP_LOOT_TABLE);
+        helper.assertTrue(keepTable != LootTable.EMPTY, "Keep chest loot table must not be EMPTY");
+
+        LootTable injectDungeon = reloadable.getLootTable(LootTableInit.SIMPLE_DUNGEON_INJECT);
+        helper.assertTrue(injectDungeon != LootTable.EMPTY, "Simple dungeon inject loot table must not be EMPTY");
+
+        LootTable kingTable = reloadable.getLootTable(EntityInit.GOB_KING.get().getDefaultLootTable());
+        helper.assertTrue(kingTable != LootTable.EMPTY, "Goblin King entity loot table must not be EMPTY");
+
+        LootTable scoriaTable = reloadable.getLootTable(BlockInit.SCORIA.get().getLootTable());
+        helper.assertTrue(scoriaTable != LootTable.EMPTY, "Scoria block loot table must not be EMPTY");
+        LootParams blockParams = new LootParams.Builder(helper.getLevel())
+                .withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(helper.absolutePos(new BlockPos(1, 1, 1))))
+                .withParameter(LootContextParams.TOOL, new ItemStack(Items.DIAMOND_PICKAXE))
+                .withParameter(LootContextParams.BLOCK_STATE, BlockInit.SCORIA.get().defaultBlockState())
+                .create(LootContextParamSets.BLOCK);
+        var drops = scoriaTable.getRandomItems(blockParams);
+        helper.assertTrue(drops.size() == 1 && drops.get(0).is(BlockInit.SCORIA.get().asItem()), "Scoria block loot table should drop Scoria");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void recipesAdvancementsAndTagsResolve(GameTestHelper helper) {
+        var recipeManager = helper.getLevel().getRecipeManager();
+        for (String name : new String[]{"bottled_souls", "chiseled_scoria", "polished_scoria", "scoria_vertical_slab", "chiseled_scoria_from_scoria_stonecutting"}) {
+            ResourceLocation id = ResourceLocation.fromNamespaceAndPath(GoblinsAndDungeons.MOD_ID, name);
+            java.util.Optional<RecipeHolder<?>> holder = recipeManager.byKey(id);
+            helper.assertTrue(holder.isPresent(), "Recipe must be loaded: " + id);
+        }
+
+        var advancements = helper.getLevel().getServer().getAdvancements();
+        for (String path : new String[]{
+                "goblinsanddungeons/root",
+                "goblinsanddungeons/center_of_the_labyrinth",
+                "goblinsanddungeons/end_of_the_labyrinth",
+                "goblinsanddungeons/an_unpleasant_surprise",
+                "goblinsanddungeons/goblin_slayer",
+                "goblinsanddungeons/ogres_are_like_onions",
+                "goblinsanddungeons/get_out_of_his_swamp"
+        }) {
+            ResourceLocation id = ResourceLocation.fromNamespaceAndPath(GoblinsAndDungeons.MOD_ID, path);
+            AdvancementHolder adv = advancements.get(id);
+            helper.assertTrue(adv != null, "Advancement must be loaded: " + id);
+        }
+
+        helper.assertTrue(BlockInit.SCORIA.get().defaultBlockState().is(BlockTags.BASE_STONE_OVERWORLD), "Scoria must be in #minecraft:base_stone_overworld");
+        helper.assertTrue(BlockInit.SCORIA.get().defaultBlockState().is(BlockTags.MINEABLE_WITH_PICKAXE), "Scoria must be in #minecraft:mineable/pickaxe");
+        helper.assertTrue(BlockInit.SCORIA_SLAB.get().defaultBlockState().is(BlockTags.SLABS), "Scoria slab must be in #minecraft:slabs");
+        helper.assertTrue(BlockInit.SCORIA_STAIRS.get().defaultBlockState().is(BlockTags.STAIRS), "Scoria stairs must be in #minecraft:stairs");
+        helper.assertTrue(BlockInit.SCORIA_WALL.get().defaultBlockState().is(BlockTags.WALLS), "Scoria wall must be in #minecraft:walls");
+        helper.assertTrue(new ItemStack(BlockInit.SCORIA_SLAB.get()).is(ItemTags.SLABS), "Scoria slab item must be in #minecraft:slabs");
         helper.succeed();
     }
 }

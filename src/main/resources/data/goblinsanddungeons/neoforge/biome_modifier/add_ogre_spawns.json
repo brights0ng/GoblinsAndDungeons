@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_spawns",
+  "biomes": "#goblinsanddungeons:has_ogre",
+  "spawners": {
+    "type": "goblinsanddungeons:ogre",
+    "maxCount": 1,
+    "minCount": 1,
+    "weight": 3
+  }
+}

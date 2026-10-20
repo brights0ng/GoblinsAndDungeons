@@ -1,0 +1,9 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": "#minecraft:is_overworld",
+  "features": [
+    "goblinsanddungeons:ore_scoria_lower",
+    "goblinsanddungeons:ore_scoria_upper"
+  ],
+  "step": "underground_ores"
+}
