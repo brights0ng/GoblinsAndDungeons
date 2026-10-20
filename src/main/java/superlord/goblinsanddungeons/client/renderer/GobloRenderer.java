@@ -1,0 +1,42 @@
+package superlord.goblinsanddungeons.client.renderer;
+
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.model.EntityModel;
+import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.minecraft.client.renderer.entity.MobRenderer;
+import net.minecraft.client.renderer.entity.layers.ItemInHandLayer;
+import net.minecraft.resources.ResourceLocation;
+import superlord.goblinsanddungeons.GoblinsAndDungeons;
+import superlord.goblinsanddungeons.client.ClientEvents;
+import superlord.goblinsanddungeons.client.model.GobloModel;
+import superlord.goblinsanddungeons.client.model.SleepingGobloModel;
+import superlord.goblinsanddungeons.common.entity.Goblo;
+
+public class GobloRenderer extends MobRenderer<Goblo, EntityModel<Goblo>> {
+
+    private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(GoblinsAndDungeons.MOD_ID, "textures/entities/goblo.png");
+    private static GobloModel<?> GOBLO;
+    private static SleepingGobloModel<?> SLEEPING_GOBLO;
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public GobloRenderer(EntityRendererProvider.Context renderManager) {
+        super(renderManager, new GobloModel(renderManager.bakeLayer(ClientEvents.GOBLO)), 0.375F);
+        this.addLayer(new ItemInHandLayer(this, renderManager.getItemInHandRenderer()));
+        GOBLO = new GobloModel(renderManager.bakeLayer(ClientEvents.GOBLO));
+        SLEEPING_GOBLO = new SleepingGobloModel(renderManager.bakeLayer(ClientEvents.SLEEPING_GOBLO));
+    }
+
+    @Override
+    protected void scale(Goblo entitylivingbaseIn, PoseStack matrixStackIn, float partialTickTime) {
+        if (entitylivingbaseIn.isSleeping()) {
+            model = SLEEPING_GOBLO;
+        } else {
+            model = GOBLO;
+        }
+    }
+
+    @Override
+    public ResourceLocation getTextureLocation(Goblo entity) {
+        return TEXTURE;
+    }
+}

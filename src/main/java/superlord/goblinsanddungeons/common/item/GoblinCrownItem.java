@@ -4,6 +4,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
@@ -16,14 +17,24 @@ import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
+import org.jetbrains.annotations.Nullable;
+import superlord.goblinsanddungeons.GoblinsAndDungeons;
 import superlord.goblinsanddungeons.init.GDTags;
 
 import java.util.List;
 
 public class GoblinCrownItem extends ArmorItem {
 
+    private static final ResourceLocation CROWN_TEXTURE = ResourceLocation.fromNamespaceAndPath(GoblinsAndDungeons.MOD_ID, "textures/models/armor/goblin_crown.png");
+
     public GoblinCrownItem(Holder<ArmorMaterial> material, Properties properties) {
         super(material, ArmorItem.Type.HELMET, properties);
+    }
+
+    @Override
+    @Nullable
+    public ResourceLocation getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, ArmorMaterial.Layer layer, boolean innerModel) {
+        return CROWN_TEXTURE;
     }
 
     /** The 1.18.2 {@code onArmorTick}: while worn, the nearest monster nearby is weakened, Goblins more than the rest. */

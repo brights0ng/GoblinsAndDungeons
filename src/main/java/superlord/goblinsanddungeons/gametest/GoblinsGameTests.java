@@ -48,6 +48,7 @@ import superlord.goblinsanddungeons.common.entity.TeleportationOrb;
 import superlord.goblinsanddungeons.common.entity.WeaknessOrb;
 import superlord.goblinsanddungeons.common.entity.tile.SoulAshCampfireTileEntity;
 import superlord.goblinsanddungeons.datagen.EmptyGameTestStructure;
+import superlord.goblinsanddungeons.init.ArmorInit;
 import superlord.goblinsanddungeons.init.AttachmentInit;
 import superlord.goblinsanddungeons.init.BlockInit;
 import superlord.goblinsanddungeons.init.EffectInit;
@@ -541,6 +542,21 @@ public final class GoblinsGameTests {
         GoblinSoulBullet goblinBullet = new GoblinSoulBullet(helper.getLevel(), stillZombie(helper, 2, 2));
         goblinBullet.onHitEntity(new EntityHitResult(player));
         helper.assertTrue(player.hasEffect(MobEffects.MOVEMENT_SLOWDOWN), "GoblinSoulBullet should apply Slowness to a hit entity");
+        helper.succeed();
+    }
+
+    // ---- armor texture (phase 4) ----
+
+    @GameTest(template = EMPTY)
+    public static void goblinCrownUsesCustomArmorTexture(GameTestHelper helper) {
+        Player player = survivalPlayer(helper);
+        ItemStack crown = new ItemStack(ItemInit.GOBLIN_CROWN.get());
+        var layer = ArmorInit.GOBLIN_CROWN.get().layers().get(0);
+        var tex = crown.getItem().getArmorTexture(crown, player, EquipmentSlot.HEAD, layer, false);
+        helper.assertTrue(
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(GoblinsAndDungeons.MOD_ID, "textures/models/armor/goblin_crown.png").equals(tex),
+                "Goblin Crown should resolve to textures/models/armor/goblin_crown.png, got " + tex
+        );
         helper.succeed();
     }
 }
