@@ -709,4 +709,46 @@ public final class GoblinsGameTests {
         helper.assertTrue(new ItemStack(BlockInit.SCORIA_SLAB.get()).is(ItemTags.SLABS), "Scoria slab item must be in #minecraft:slabs");
         helper.succeed();
     }
+
+    @GameTest(template = EMPTY)
+    public static void allModRecipesAdvancementsAndUrnSilkTouchWork(GameTestHelper helper) {
+        var recipeManager = helper.getLevel().getRecipeManager();
+        long modRecipeCount = recipeManager.getRecipes().stream()
+                .filter(r -> GoblinsAndDungeons.MOD_ID.equals(r.id().getNamespace()))
+                .count();
+        helper.assertTrue(modRecipeCount == 63, "Expected all 63 mod recipes to load, got " + modRecipeCount);
+
+        var advancements = helper.getLevel().getServer().getAdvancements();
+        long modAdvancementCount = advancements.getAllAdvancements().stream()
+                .filter(a -> GoblinsAndDungeons.MOD_ID.equals(a.id().getNamespace()))
+                .count();
+        helper.assertTrue(modAdvancementCount == 32, "Expected all 32 mod advancements to load, got " + modAdvancementCount);
+
+        var reloadable = helper.getLevel().getServer().reloadableRegistries();
+        LootTable urnTable = reloadable.getLootTable(BlockInit.URN.get().getLootTable());
+        helper.assertTrue(urnTable != LootTable.EMPTY, "Urn loot table must not be EMPTY");
+
+        ItemStack silkPick = new ItemStack(Items.DIAMOND_PICKAXE);
+        var enchantmentsRegistry = helper.getLevel().registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
+        silkPick.enchant(enchantmentsRegistry.getOrThrow(net.minecraft.world.item.enchantment.Enchantments.SILK_TOUCH), 1);
+
+        LootParams silkParams = new LootParams.Builder(helper.getLevel())
+                .withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(helper.absolutePos(new BlockPos(1, 1, 1))))
+                .withParameter(LootContextParams.TOOL, silkPick)
+                .withParameter(LootContextParams.BLOCK_STATE, BlockInit.URN.get().defaultBlockState())
+                .create(LootContextParamSets.BLOCK);
+        var silkDrops = urnTable.getRandomItems(silkParams);
+        helper.assertTrue(silkDrops.size() == 1 && silkDrops.get(0).is(BlockInit.URN.get().asItem()),
+                "Urn broken with Silk Touch should drop the Urn block item");
+
+        LootParams plainParams = new LootParams.Builder(helper.getLevel())
+                .withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(helper.absolutePos(new BlockPos(1, 1, 1))))
+                .withParameter(LootContextParams.TOOL, new ItemStack(Items.DIAMOND_PICKAXE))
+                .withParameter(LootContextParams.BLOCK_STATE, BlockInit.URN.get().defaultBlockState())
+                .create(LootContextParamSets.BLOCK);
+        var plainDrops = urnTable.getRandomItems(plainParams);
+        helper.assertTrue(plainDrops.stream().noneMatch(s -> s.is(BlockInit.URN.get().asItem())),
+                "Urn broken without Silk Touch must not drop the Urn block item");
+        helper.succeed();
+    }
 }
